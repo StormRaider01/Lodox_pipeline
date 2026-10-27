@@ -1,7 +1,8 @@
 """ROI masks of the phantoms.
 
-Phantom_Mask: a phantom with a visible bone (or a bare bone, soft_tissue=False): bone (shaft + head), muscle and fat.
-Final_Phantom_Mask: the final phantom of 21 October, where the bone only shows where the CaCO3 settled.
+Phantom_Mask: a phantom with a visible bone (or a bare bone, soft_tissue=False): bone (shaft + head), muscle and fat
+(prototype 2 and the final phantom). soft_tissue_trend gives the soft tissue under a bone cast inside a cylinder.
+Final_Phantom_Mask: prototype 3 (the 'final phantom' of 21 October), where the bone only shows where the CaCO3 settled.
 
 Phantom_Mask
 
@@ -57,11 +58,33 @@ def estimate_fat_thickness(sm, soft, d_out, pixel_spacing, max_mm=20):
     raise RuntimeError("Could not estimate the fat layer thickness; pass fat_thickness_mm instead")
 
 
+def fat_and_muscle(contrast, soft, d_out, pixel_spacing, edge_mm=1.0, levels=(0.25, 0.75)):
+    """Fat and muscle pixels from a contrast in which fat reads lower than muscle whatever the path length (e.g. the low
+    over the high kVp contrast, which follows the spectral ratio of the material). Otsu's threshold splits the soft-tissue
+    pixels (more than edge_mm inside the outline) into a fat and a muscle class; a pixel is fat when its contrast lies less
+    than levels[0] of the way from the fat to the muscle class median, muscle when it lies more than levels[1] of the way.
+    The rays in between cross both layers and are left out. The test is pixel by pixel, so the ROIs follow a fat layer of
+    uneven thickness. Returns the fat and muscle masks."""
+    inside = soft & (d_out > edge_mm)
+    v = contrast[inside]
+    t = otsu_threshold(v)
+    fat_level, muscle_level = np.median(v[v <= t]), np.median(v[v > t])
+    lo, hi = (fat_level + f * (muscle_level - fat_level) for f in levels)
+    speck = max(1, int(round(1 / pixel_spacing)))
+    return (ndi.binary_opening(inside & (contrast < lo), iterations=speck),
+            ndi.binary_opening(inside & (contrast > hi), iterations=speck))
+
+
 class Phantom_Mask(RoiMask):
     """A class to represent the phantom mask: 'Bone shaft', 'Bone head', 'Muscle', 'Fat' + 'Phantom background'."""
 
     def __init__(self, image, labels, regions, pixel_spacing=0.2, soft_tissue=True, fat_thickness_mm=None,
-                 margin_mm=2.0, head_width_ratio=1.3, outline_sigma=6, bg_inner_mm=25, bg_outer_mm=35):
+                 margin_mm=2.0, head_width_ratio=1.3, outline_sigma=6, bg_inner_mm=25, bg_outer_mm=35,
+                 fat_contrast=None):
+        """fat_contrast: an image in which fat reads lower than muscle whatever the path length (e.g. the low over the
+        high kVp contrast). When given, the fat and muscle ROIs are found pixel by pixel from it (fat_and_muscle) instead
+        of a band of fixed thickness under the outline: in a cylinder the grey level falls towards the edge for any
+        material, and a fat layer of uneven thickness has no single band width."""
         super().__init__(image.shape, pixel_spacing)
         mm = pixel_spacing
         m = margin_mm / mm
@@ -102,6 +125,7 @@ class Phantom_Mask(RoiMask):
         self.bone_length_mm = n_len * mm
         self.shaft_length_mm = (split - s.min()) * mm
         self.axis = axis
+        self.split_s = split                                        # along_axis() value where the head starts
 
         s_img = np.zeros(image.shape)                               # s for every bone pixel
         s_img[yy, xx] = s
@@ -115,12 +139,20 @@ class Phantom_Mask(RoiMask):
             d_out = ndi.distance_transform_edt(outline) * mm        # distance from the outside of the phantom
             d_bone = ndi.distance_transform_edt(~bone) * mm         # distance from the bone
             soft = outline & ~bone & (d_bone > margin_mm)
-            if fat_thickness_mm is None:
-                fat_thickness_mm = estimate_fat_thickness(sm, soft, d_out, mm)
-                print(f"Estimated fat layer thickness: {fat_thickness_mm:.1f} mm (pass fat_thickness_mm to override)")
-            fat_margin = min(margin_mm, fat_thickness_mm / 4)
-            self.add('Muscle', soft & (d_out > fat_thickness_mm + margin_mm))
-            self.add('Fat', soft & (d_out > fat_margin) & (d_out < fat_thickness_mm - fat_margin))
+            if fat_contrast is not None:
+                fat, muscle = fat_and_muscle(smooth(fat_contrast, mm), soft, d_out, mm)
+                fat_thickness_mm = float(np.percentile(d_out[fat], 95))        # depth reached by the pure-fat rays
+                print(f"Fat and muscle from the spectral contrast: pure-fat rays reach up to {fat_thickness_mm:.1f} mm "
+                      f"inside the outline (95th percentile)")
+                self.add('Muscle', muscle)
+                self.add('Fat', fat)
+            else:
+                if fat_thickness_mm is None:
+                    fat_thickness_mm = estimate_fat_thickness(sm, soft, d_out, mm)
+                    print(f"Estimated fat layer thickness: {fat_thickness_mm:.1f} mm (pass fat_thickness_mm to override)")
+                fat_margin = min(margin_mm, fat_thickness_mm / 4)
+                self.add('Muscle', soft & (d_out > fat_thickness_mm + margin_mm))
+                self.add('Fat', soft & (d_out > fat_margin) & (d_out < fat_thickness_mm - fat_margin))
         else:
             print("Bare bone (soft_tissue=False): the muscle and fat ROIs are left empty")
             self.names += ['Muscle', 'Fat']
@@ -136,6 +168,50 @@ class Phantom_Mask(RoiMask):
         self.valid = all(means[a] > means[b] for a, b in zip(order, order[1:]))
         if not self.valid:
             print(f"Warning: phantom ROI check failed, mean values {({n: round(v, 3) for n, v in means.items()})}")
+        self.centre = centre
+
+    def along_axis(self):
+        """Position of every pixel along the bone's long axis (px from the bone's centre, increasing towards the head;
+        the head starts at split_s)."""
+        yy, xx = np.indices(self.mask.shape)
+        return (yy - self.centre[0]) * self.axis[0] + (xx - self.centre[1]) * self.axis[1]
+
+    def soft_tissue_trend(self, image, **kwargs):
+        """The soft-tissue level under the bone, interpolated from the muscle ROI on both sides of it (see
+        soft_tissue_trend below)."""
+        return soft_tissue_trend(image, self.roi('Muscle'), self.centre, self.axis, self.pixel_spacing, **kwargs)
+
+
+def soft_tissue_trend(image, muscle, centre, axis, pixel_spacing, degree=2, window_mm=2.0, min_pixels=50):
+    """The soft-tissue level under a bone, interpolated from the muscle pixels on both sides of it.
+
+    For a bone cast inside a cylinder of soft tissue (the final phantom) the muscle next to the bone has a shorter path
+    than the soft tissue the bone sits in, so the muscle ROI is not a fair reference. Across the bone (n, the distance from
+    the line through centre along axis, the bone's long axis) a polynomial of the given degree is fitted to the muscle
+    pixels of every 1-px slice along the axis (pooled over window_mm) and evaluated at every pixel of that slice. NaN where
+    a slice has fewer than min_pixels muscle pixels on either side of the line. The fit is linear in the image, so the trend
+    of T_H - w T_L is trend(T_H) - w trend(T_L)."""
+    yy, xx = np.indices(image.shape)
+    normal = np.array([-axis[1], axis[0]])
+    s = (yy - centre[0]) * axis[0] + (xx - centre[1]) * axis[1]
+    n = ((yy - centre[0]) * normal[0] + (xx - centre[1]) * normal[1]) / 100     # scaled for conditioning
+    bins = np.round(s - s.min()).astype(int)
+    n_bins = bins.max() + 1
+    b, x, v = bins[muscle], n[muscle], image[muscle]
+    window = max(1, int(round(window_mm / pixel_spacing)))
+
+    def pooled(weights):
+        return ndi.uniform_filter1d(np.bincount(b, weights, minlength=n_bins), window, mode='constant')
+
+    powers = [pooled(x ** k) for k in range(2 * degree + 1)]
+    rhs = [pooled(v * x ** k) for k in range(degree + 1)]
+    M = np.stack([np.stack([powers[j + k] for k in range(degree + 1)], -1) for j in range(degree + 1)], -2)
+    y = np.stack(rhs, -1)
+    support = np.minimum(pooled((x > 0).astype(float)), pooled((x < 0).astype(float))) * window >= min_pixels
+    coef = np.full((n_bins, degree + 1), np.nan)
+    coef[support] = np.linalg.solve(M[support], y[support][..., None])[..., 0]
+    c = coef[bins]
+    return sum(c[..., k] * n ** k for k in range(degree + 1))
 
 
 class Final_Phantom_Mask(RoiMask):
@@ -149,11 +225,18 @@ class Final_Phantom_Mask(RoiMask):
     down (bone_names). Each soft-tissue reference is the bone ROI moved straight down (or up, if there is no room
     below) by its own height + gap_mm: the same columns, so the same path length through the cylinder. Dark voids
     (air bubbles) are kept out of the soft-tissue ROIs.
+    axis: the direction of the cylinder's long axis in the image. 'vertical' (21 October) as above; 'horizontal'
+    (25 October, head on the left) works on the transposed image, so the trend is taken along each row, the bone
+    regions are named from the left and the references move along the row.
     """
 
     def __init__(self, image, labels, regions, pixel_spacing=0.24, bone_names=('head', 'joint'), interior_mm=5.0,
                  bone_sigma=5.0, min_bone_mm2=100, margin_mm=2.0, gap_mm=3.0, outline_sigma=6, bg_inner_mm=25,
-                 bg_outer_mm=35):
+                 bg_outer_mm=35, axis='vertical'):
+        if axis not in ('vertical', 'horizontal'):
+            raise ValueError(f"axis must be 'vertical' or 'horizontal', not {axis!r}")
+        if axis == 'horizontal':
+            image, labels = image.T, labels.T
         super().__init__(image.shape, pixel_spacing)
         mm = pixel_spacing
         m = max(1, int(round(margin_mm / mm)))
@@ -207,3 +290,6 @@ class Final_Phantom_Mask(RoiMask):
             for n in names)
         if not self.valid:
             print(f"Warning: final phantom ROI check failed, mean values {({n: round(v, 3) for n, v in means.items()})}")
+        if axis == 'horizontal':                                    # back to the orientation of the image
+            self.mask, self.footprint, self.bone = (np.ascontiguousarray(a.T) for a in (self.mask, self.footprint,
+                                                                                        self.bone))

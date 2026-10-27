@@ -6,7 +6,7 @@ resolution starting from the coarse answer. Both images are smoothed for the sea
 at a half-pixel shift averages away pixel noise, lowering the MSE, and the optimiser drifts to a spurious ~0.5 px shift.
 """
 import numpy as np
-from scipy.ndimage import affine_transform, gaussian_filter
+from scipy.ndimage import affine_transform, gaussian_filter, gaussian_gradient_magnitude
 from scipy.optimize import minimize
 
 
@@ -58,6 +58,19 @@ def mse(params, target, misaligned):
     theta, tx, ty = params                                              # Retrieve parameters
     warped = transformation(misaligned, theta, tx, ty, cval=np.nan)     # Perform transformation
     return np.nanmean((target - warped) ** 2)
+
+
+def edges(image, sigma=1.5):
+    """Gradient magnitude (Gaussian derivatives, sigma in pixels) scaled to a maximum of 1."""
+    g = gaussian_gradient_magnitude(image, sigma)
+    return g / g.max()
+
+
+def register_edges(target, misaligned, x0=(0, 0, 0), sigma=1.5, **kwargs):
+    """register() on the edges of both images, for a pair taken at different kVp. The grey levels of the two presets
+    differ (bone, soft tissue and background change contrast by different amounts), so the MSE of the raw images is a
+    weak guide that can settle half a pixel to a pixel away; the edges sit in the same place in both images."""
+    return register(edges(target, sigma), edges(misaligned, sigma), x0, **kwargs)
 
 
 def register(target, misaligned, x0=(0, 0, 0), factors=(4, 1), sigma=2.0):

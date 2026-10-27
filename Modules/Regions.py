@@ -1,5 +1,6 @@
-"""Region split of the 21 October scans: every frame holds the ice trays with the step wedge, the plan B phantom and the
-final phantom, always in the same places, so each object gets a fixed box and is processed on its own.
+"""Region split of the scans: on 21 October every frame holds the ice trays with the step wedge, the plan B phantom and the
+final phantom; on 25 October prototype 3, the wedge and the final phantom (SESSION_BOXES_MM). The objects are always in the
+same places, so each one gets a fixed box and is processed on its own.
 
 The boxes are in mm from the top-left corner of the image (top, left, bottom, right). They leave about 30 mm around
 each object, which covers the shifts between scans (the scan start moves the objects by up to 15 mm). The wedge lies
@@ -23,6 +24,17 @@ BOXES_MM = {
 }
 PHANTOM_MIN_AREA_MM2 = 3000                     # a phantom is far larger than a tray cell (~800 mm^2)
 
+# The boxes of each scan session, with the phantoms under their final names: prototype 2 = the plan B phantom (silicone
+# muscle), prototype 3 = the 21 October 'final phantom' (sedimented CaCO3) and the final phantom (eggshell bone in resin
+# and candle wax). On 25 October the phantoms lie side by side (axes along the rows) with the wedge, upright, between them.
+SESSION_BOXES_MM = {
+    '21 Oct': {'Trays': BOXES_MM['Trays'], 'Prototype 2': BOXES_MM['Plan B phantom'],
+               'Prototype 3 (21 Oct)': BOXES_MM['Final phantom']},
+    '25 Oct': {'Wedge': (285, 285, 405, 375),            # wedge alone (no trays in these frames)
+               'Prototype 3 (25 Oct)': (245, 20, 440, 306),     # left
+               'Final phantom': (270, 345, 460, 600)},          # right
+}
+
 
 class Region:
     """One box of the frame: .slices crops an image to it, .labels / .objects are its Otsu objects (box coordinates)."""
@@ -41,13 +53,16 @@ class Region:
         return image[self.slices]
 
     def check(self, pixel_spacing):
-        """The box must hold what it is meant to: 20 tray cells (21 with water) and the wedge, or one phantom."""
+        """The box must hold what it is meant to: 20 tray cells (21 with water) and the wedge, the wedge alone (a box
+        named 'Wedge', for frames without trays) or one phantom."""
         mm = pixel_spacing
         if self.name == 'Trays':
             n = len(find_cells(self.objects, mm))
             find_wedge(self.objects, mm)                                    # raises if the wedge is missing
             if n not in (20, 21):
                 raise RuntimeError(f"Trays box holds {n} tray cells instead of 20 (21 with water): has a tray moved?")
+        elif self.name == 'Wedge':
+            find_wedge(self.objects, mm)
         else:
             n = sum(r.area * mm ** 2 > PHANTOM_MIN_AREA_MM2 for r in self.objects)
             if n != 1:

@@ -1,0 +1,156 @@
+\subsection{Quantitative Analysis}\label{subsec:analysis_results}
+
+The validation stage of \Cref{subsec:validation} checks the pipeline output in three independent ways. First, the \gls{cnr} and \gls{snr} of each phantom are measured before and after bone suppression. Second, the measurements are compared with theory, both for the ice-tray cells (ice-tray mode) and for the subtraction weight of the phantoms (phantom mode). Third, the contrast of the phantoms is compared with that of conventional radiographs of a real humerus. All results come from the 60 and 120~\gls{kvp} scan pair of 21 October, with the same \glspl{roi} as the bone suppression.
+
+\subsubsection{Results}\label{subsubsec:analysis_results}
+
+\paragraph{CNR and SNR before and after bone suppression.} \Cref{tab:analysis_cnr} and \Cref{fig:analysis_snr_cnr} give the \gls{cnr} of each phantom in the two thickness maps ($T_L$, $T_H$) and in the bone-suppressed image $S$. Before suppression the bone was clearly visible. Its \gls{cnr} against the neighbouring soft tissue was 220 ($T_L$) and 308 ($T_H$) in the plan B phantom, and 77 and 97 in the final phantom. The bone contrast was lower at 120~\gls{kvp}, but the noise in $T_L$ was 2.0 (plan B) and 2.4 (final) times that in $T_H$, so $T_H$ had the higher \gls{cnr}.
+
+At $w_{opt}$ the bone \gls{cnr} fell to 7.5 in the plan B phantom and 1.5 in the final phantom. These are falls of 97.6 and 98.4\,\% relative to $T_H$. The soft tissue was affected very differently in the two phantoms. In the plan B phantom, the muscle \gls{cnr} fell from 335 to 23 and the fat \gls{cnr} from 52 to 4.0. Allowing for the higher noise in $S$, only 9--10\,\% of the soft-tissue contrast remained. In the final phantom, the soft-tissue \gls{cnr} fell from 696 to 283, so 48\,\% of the contrast remained. At the theoretical weight $w_{wedge}$, 53\,\% (plan B) and 38\,\% (final) of the bone \gls{cnr} of $T_H$ remained.
+
+The thickness maps are zero in the background band, so the \gls{snr} of a soft-tissue \gls{roi} equals its \gls{cnr} against the background, and only the bone \gls{snr} is reported separately. In the plan B phantom, the bone \gls{snr} fell from 643 in $T_H$ to 24 in $S$. In the final phantom, it fell from 793 to 283, which equals the soft-tissue \gls{snr}: once the bone was removed, the bone \gls{roi} showed only the resin around it.
+
+The subtraction raised the background noise to 1.30 (plan B) and 1.18 (final) times that of $T_H$. This is 24 and 27\,\% less than predicted for independent noise in the two scans, $\sigma_S = \sqrt{\sigma_H^2 + w^2\sigma_L^2}$. The background noise of the two scans was correlated, with a correlation coefficient of 0.45 (plan B) and 0.48 (final), so part of it cancelled in the subtraction. After denoising (\Cref{subsec:denoise_results}), the noise fell to 0.85 and 0.79 times that of $T_H$ with non-local means.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Background noise $\sigma_{bg}$ (mm of \gls{pla}) and \gls{cnr} of each phantom before bone suppression ($T_L$, $T_H$), after it ($S$ at $w_{opt}$ and at the theoretical $w_{wedge}$) and after denoising. Bone is the \gls{cnr} of bone against the neighbouring soft tissue, averaged over the bone \glspl{roi}. Muscle, fat and soft are the \gls{cnr} against the background, which equals the \gls{snr} of that tissue.}
+    \label{tab:analysis_cnr}
+    \small
+    \begin{tabular}{|l|c|c|c|c|c|c|c|}
+    \hline
+     & \multicolumn{4}{c|}{\textbf{Plan B phantom}} & \multicolumn{3}{c|}{\textbf{Final phantom}}\\
+    \hline
+    \textbf{Image} & $\sigma_{bg}$ & \textbf{Bone} & \textbf{Muscle} & \textbf{Fat} & $\sigma_{bg}$ & \textbf{Bone} & \textbf{Soft}\\
+    \hline
+    $T_L$ (60~\gls{kvp})           & 0.298 & 220  & 218  & 31.5 & 0.347 & 76.6 & 284\\
+    $T_H$ (120~\gls{kvp})          & 0.149 & 308  & 335  & 51.6 & 0.145 & 96.8 & 696\\
+    \hline
+    $S$ at $w_{opt}$               & 0.194 & 7.5  & 23.4 & 4.0  & 0.171 & 1.5  & 283\\
+    $S$ at $w_{wedge}$             & 0.138 & 164  & 194  & 31.2 & 0.136 & 37.1 & 496\\
+    \hline
+    $S$, non-local means           & 0.126 & 11.5 & 35.7 & 5.9  & 0.115 & 2.4  & 423\\
+    $S$, N2N                       & 0.137 & 11.0 & 33.2 & 6.1  & 0.124 & 2.3  & 393\\
+    \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/validation_snr_cnr.png} % outputs/I112_I113/validation_snr_cnr.png; change the path to your figure folder
+    \caption{\gls{snr} (left) and bone--soft-tissue \gls{cnr} (right) of both phantoms before and after bone suppression and denoising, on a logarithmic scale. Points are the mean over each phantom's \glspl{roi} and bars show the range across them.}
+    \label{fig:analysis_snr_cnr}
+\end{figure}
+
+\paragraph{Theoretical comparison: ice-tray mode.} The spectral ratio $\kappa = R_L / R_H$ of each tray cell was compared with the value predicted from its recipe. The density cancels in $\kappa$, so the cured densities, which were not measured, are not needed. \Cref{tab:analysis_kappa} and \Cref{fig:analysis_theory} summarise the 19 cells of known composition. With effective energies of $0.5\times$\gls{kvp} (30 and 60~keV), the measured $\kappa$ of the fats, waxes and resin was 11--17\,\% above the prediction. The $\kappa$ of the plaster-of-Paris bone mixtures was only 0.53--0.61 times the prediction (1.37--1.46 measured against 2.31--2.57 predicted). Every measured $\kappa$ was therefore closer to 1 than predicted, which means that the two presets are closer in effective energy than $0.5\times$\gls{kvp} implies. The single pair of effective energies that best fitted all the cells was $E_L = 31.8$~keV and $E_H = 41.2$~keV. With these energies every cell was within $-4$ to $+7$\,\% of its measured $\kappa$, and the rms error of $\log\kappa$ was 0.030.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Measured spectral ratio $\kappa = R_L/R_H$ of the tray cells against the value predicted from their recipe, at $0.5\times$\gls{kvp} and at the fitted effective energies ($E_L = 31.8$~keV, $E_H = 41.2$~keV). Ranges are over the cells of each group. The silicone putty ($\kappa = 1.21$) is left out because its composition is unknown.}
+    \label{tab:analysis_kappa}
+    \small
+    \begin{tabular}{|l|c|c|c|c|c|c|}
+    \hline
+    \textbf{Group} & \textbf{Cells} & \textbf{Measured} & \textbf{At $0.5\times$kVp} & \textbf{Ratio} & \textbf{At fitted $E$} & \textbf{Ratio}\\
+    \hline
+    Fats, waxes and resin            & 7 & 0.86--0.93 & 0.75--0.83 & 1.11--1.17 & 0.87--0.92 & 0.98--1.02\\
+    CaCO$_3$ + resin                 & 4 & 1.05--1.18 & 0.97--1.43 & 0.79--1.09 & 0.98--1.17 & 0.98--1.07\\
+    Bone (plaster of Paris mixtures) & 8 & 1.37--1.46 & 2.31--2.57 & 0.53--0.61 & 1.38--1.43 & 0.96--1.04\\
+    \hline
+    \end{tabular}
+\end{table}
+
+\paragraph{Theoretical comparison: phantom mode.} \Cref{tab:analysis_w} compares the measured weight $w_{opt}$ of each bone \gls{roi} with \Cref{eq:w_wedge}. At $0.5\times$\gls{kvp}, the theory gave $w_{wedge} = 0.35$ for the plan B phantom and 0.34 for the final phantom, well below the measured values ($w_{opt}/w_{wedge} = 1.9$--$2.0$ and $1.5$--$1.6$). At the fitted effective energies, \Cref{eq:w_wedge} gave 0.669 for the plan B bone, within 1 and 8\,\% of $w_{opt}$ for the shaft and head. The tray cell of the same bone mixture cancelled at $w = 0.665$. For the final phantom, with CaCO$_3$ replacing resin along the path, the theory gave 0.630, and $w_{opt}$ was 14--18\,\% below this value.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Measured subtraction weight $w_{opt}$ against \Cref{eq:w_wedge}, evaluated at $0.5\times$\gls{kvp} ($w_{wedge}$, with the range for $0.4$--$0.6\times$\gls{kvp}) and at the effective energies fitted to the tray cells.}
+    \label{tab:analysis_w}
+    \small
+    \begin{tabular}{|l|l|c|c|c|c|}
+    \hline
+    \textbf{Phantom} & \textbf{Bone \gls{roi}} & $w_{opt}$ & $w_{wedge}$ & $w$ \textbf{at fitted} $E$ & $w_{opt}\,/\,w$ \textbf{at fitted} $E$\\
+    \hline
+    Plan B & Shaft & 0.675 & 0.354 (0.352--0.381) & 0.669 & 1.01\\
+           & Head  & 0.721 & 0.354 (0.352--0.381) & 0.669 & 1.08\\
+    \hline
+    Final  & Head  & 0.520 & 0.338 (0.337--0.359) & 0.630 & 0.83\\
+           & Joint & 0.540 & 0.338 (0.337--0.359) & 0.630 & 0.86\\
+    \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/validation_theory.png} % outputs/I112_I113/validation_theory.png
+    \caption{Theoretical comparison. Left: measured $\kappa$ of the tray cells against the prediction at $0.5\times$\gls{kvp} (bars: $0.4$--$0.6\times$\gls{kvp}). Centre: the same against the prediction at the fitted effective energies. Right: measured $w_{opt}$ of each bone \gls{roi} against $w_{wedge}$ at $0.4$--$0.6\times$\gls{kvp} and against \Cref{eq:w_wedge} at the fitted effective energies.}
+    \label{fig:analysis_theory}
+\end{figure}
+
+\paragraph{Open-source comparison.} Grey levels and \gls{cnr} cannot be compared directly between the \gls{ls} and another system. The comparison therefore uses the contrast ratio
+\begin{equation}
+    K = \frac{|\tilde{g}_{bone} - \tilde{g}_{soft}|}{|\tilde{g}_{soft} - \tilde{g}_{bg}|},
+    \label{eq:contrast_ratio}
+\end{equation}
+where $\tilde{g}$ is the median of an \gls{roi}. $K$ does not depend on the gain, offset or polarity of an image. It was measured on 14 non-fractured humerus radiographs from an open-source dataset. % TODO: cite the Kaggle humerus fracture dataset (CC BY 4.0)
+In each radiograph, the bone, soft-tissue and background \glspl{roi} were placed along a line through the humeral shaft, set by two clicked points. On the phantoms, $K$ was measured on the thickness maps with the \glspl{roi} used above. Two radiographs were rejected because their bone and soft-tissue \glspl{roi} differed by only 0--1 grey levels: the line missed the shaft, or the background was not air.
+
+\Cref{tab:analysis_K} and \Cref{fig:analysis_K} give the results, and \Cref{fig:analysis_humerus} shows the phantoms next to three of the radiographs. The 12 valid radiographs gave a median $K$ of 0.40 (interquartile range 0.31--0.53, full range 0.14--0.96). The plan B phantom gave $K = 1.01$ in $T_L$ and 0.92 in $T_H$, 2.6 and 2.3 times the humerus median. In $T_L$ this was above every radiograph, and in $T_H$ above all but one. The final phantom gave $K = 0.27$ in $T_L$, 0.68 times the median and just below the interquartile range. In $T_H$ it gave 0.14, about equal to the lowest radiograph.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Contrast ratio $K$ (\Cref{eq:contrast_ratio}) of the humerus radiographs and of the phantoms. For the phantoms, $K$ is the mean of the bone \glspl{roi}, with the value of each \gls{roi} in brackets.}
+    \label{tab:analysis_K}
+    \small
+    \begin{tabular}{|l|c|c|}
+    \hline
+    \textbf{Data} & $K$ & $K$ \textbf{/ humerus median}\\
+    \hline
+    Humerus radiographs ($n = 12$) & 0.40 (IQR 0.31--0.53) & 1.00\\
+    \hline
+    Plan B phantom, $T_L$ & 1.01 (shaft 0.86, head 1.16) & 2.55\\
+    Plan B phantom, $T_H$ & 0.92 (shaft 0.75, head 1.09) & 2.33\\
+    \hline
+    Final phantom, $T_L$  & 0.27 (head 0.30, joint 0.24) & 0.68\\
+    Final phantom, $T_H$  & 0.14 (head 0.15, joint 0.13) & 0.35\\
+    \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{Figures/validation_humerus_examples.png} % outputs/I112_I113/validation_humerus_examples.png
+    \caption{The humerus radiographs closest to the lower quartile, median and upper quartile of $K$ (left three), next to the plan B and final phantoms at 60~\gls{kvp} ($T_L$). The \glspl{roi} are marked: bone in red, soft tissue in cyan and background in magenta.}
+    \label{fig:analysis_humerus}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\linewidth]{Figures/validation_humerus_K.png} % outputs/I112_I113/validation_humerus_K.png
+    \caption{Contrast ratio $K$ of every valid humerus radiograph (grey, with the median and interquartile range in black) and of each bone \gls{roi} of the phantoms in $T_L$ (circles) and $T_H$ (diamonds).}
+    \label{fig:analysis_K}
+\end{figure}
+
+\subsubsection{Discussion}\label{subsubsec:analysis_discussion}
+
+\paragraph{Bone suppression and soft-tissue retention.} The suppression removed 98\,\% of the bone \gls{cnr} in both phantoms, but the soft tissue survived much better in the final phantom (48\,\%) than in the plan B phantom (9--10\,\%). The amount of soft tissue kept depends on how far the soft tissue's own cancelling weight $w_{soft}$ is from that of the bone. A slab of tissue keeps a fraction of about $1 - w_{opt}/w_{soft}$ of its contrast. The silicone putty of the plan B phantom cancels at $w_{soft} = 0.77$ in the trays, close to the bone's 0.70, which predicts that 9\,\% is kept. The resin of the final phantom cancels at 1.03, far from the bone's 0.53, which predicts 48\,\%. Both predictions match the measurements. The silicone behaves more like bone than real muscle does: its spectral ratio is 1.21, against 1.00 for water. The silicon in the putty, and any mineral filler it contains, has a higher atomic number than the carbon, nitrogen and oxygen of soft tissue, which makes its attenuation fall faster with energy. Real muscle and fat consist mainly of hydrogen, carbon, nitrogen and oxygen, like water and the resin, so a real arm would be expected to behave more like the final phantom. Silicone putty is therefore a poor muscle substitute for dual-energy work, even though its attenuation at a single energy may be suitable.
+
+The noise in $S$ was 24--27\,\% lower than predicted for independent noise because the background noise of the two scans was correlated. A likely source is a pattern common to both scans, such as detector stripes. This correlation helps the subtraction, but it also means that the noise is not independent between scans, which was an assumption of the noise model.
+
+\paragraph{The theory works once the effective energies are calibrated.} The measured $w_{opt}$ was about twice $w_{wedge}$. The cause is the assumed effective energies, not the subtraction or \Cref{eq:w_wedge}. In \Cref{eq:w_wedge}, $w$ depends almost entirely on the ratio $E_H/E_L$ and hardly on the energies themselves. For the plan B bone, 31.8/41.2~keV and 40/52~keV (both a ratio of 1.30) give $w = 0.667$ and 0.668, while 30/60~keV and 25/50~keV (both a ratio of 2) give 0.35 and 0.36. The $0.4$--$0.6\times$\gls{kvp} band holds the ratio at 2, so it hides the real uncertainty. The tray cells, which contain no phantom data, gave $E_L = 31.8$~keV, a typical $0.53\times$\gls{kvp}, but $E_H = 41.2$~keV, only $0.34\times$\gls{kvp}. The two presets are therefore about 9~keV apart rather than 30~keV. A likely contributor is the energy response of the detector. A scintillator of finite thickness absorbs the high-energy part of a 120~\gls{kvp} beam poorly, so the detected signal is weighted towards lower energies than the beam itself. The fitted energies are therefore apparent, system-level values that also include filtration, beam hardening and any processing that depends on the preset. They are not the mean energies of the spectra.
+
+$w$ changes by about 5\,\% per keV of $E_L$ and 4\,\% per keV of $E_H$. Predicting $w$ to within 5\,\% therefore needs the energies to within about 1~keV, which a rule of thumb cannot provide. With the calibrated energies, the theory predicted $w_{opt}$ of the plan B bone to within 1--8\,\%. This is similar to the 7\,\% difference between the shaft and the head of the same phantom, possibly because the thicker head hardens the beam more. The fit includes the tray cell with the plan B bone recipe, but this is only one of the 19 cells.
+
+For the final phantom, a 14--18\,\% gap remains. It is not explained by the assumed composition. Changing the resin density by $\pm 0.05$~g/cm$^3$ changes $w$ by less than 0.5\,\%. Air voids as large as the CaCO$_3$ volume lower it by only 6\,\%. The concentration of the sedimented CaCO$_3$ cancels out of $w$ entirely. Closing the gap would need $E_H \approx 45$~keV, so the spectrum along the phantom path may differ from that through the 28~mm tray cells. The bone signature of the final phantom is also small (1.3--1.5~cm of \gls{pla} in $T_H$, against 3.7--5.4~cm for plan B), so small biases matter more. The data cannot separate these causes, and the gap remains unexplained. The $w_{wedge}$ of the final phantom in \Cref{tab:analysis_w} treats the CaCO$_3$ as bare. With the resin it displaces included, it would be 0.28, which widens the gap at $0.5\times$\gls{kvp} but does not change the conclusion. The pipeline uses the measured $w_{opt}$ and not the theory, so none of this affects the suppressed images. It does show, however, that the subtraction weight of the \gls{ls} cannot be predicted from the tube voltage alone. It must be calibrated, which the ice trays achieve.
+
+\paragraph{Realism of the phantoms.} The final phantom is the closer match to a real humerus. At 60~\gls{kvp}, which is close to a typical clinical humerus exposure, its $K$ was 0.68 times the humerus median and inside the range of the radiographs. The plan B phantom had 2.6 times too much bone contrast relative to its soft tissue. Its soft tissue is only a thin layer of silicone and wax (6.5~cm of \gls{pla} against the background in $T_L$), so the bone (5.6--7.5~cm of \gls{pla} against the soft tissue) dominates the image. In a real arm, the thick soft tissue dominates instead. The final phantom has the opposite imbalance. Its resin cylinder gives 9.8--9.9~cm of \gls{pla} against the background, while the sedimented bone adds only 2.4--3.0~cm. To reach the humerus median, its bone contrast would need to rise by about 1.5 times, for example through a higher CaCO$_3$ loading in the bone or a thinner resin cylinder. In both phantoms, $K$ fell from 60 to 120~\gls{kvp} because the bone contrast falls faster with energy than the soft-tissue contrast. This is the effect that the dual-energy subtraction relies on.
+
+\paragraph{Limitations.}
+\begin{itemize}
+    \item The humerus radiographs are processed 8-bit images with an unknown display curve and exposure. $K$ is unaffected by gain, offset and polarity, but not by non-linear processing, so the comparison is indicative only. The 12 valid images also vary widely (0.14--0.96), reflecting differences in patient size and processing.
+    \item All results come from a single scan pair, with two bone \glspl{roi} per phantom.
+    \item The effective energies were fitted to the same scan session as the phantoms, and they describe the 28~mm tray cells rather than the phantom path.
+    \item The noise was measured only in the flat background band.
+\end{itemize}
+
+In summary, weighted log subtraction removed 98\,\% of the bone contrast in both phantoms. The soft tissue was retained well only where its spectral behaviour differed from that of bone, as in the resin of the final phantom. The theory reproduced the measured weight of the plan B bone once the effective energies were calibrated on the ice trays, but not with the usual $0.5\times$\gls{kvp} estimate. The final phantom is the more realistic of the two, with about two-thirds of the bone-to-soft-tissue contrast of a real humerus at 60~\gls{kvp}.
